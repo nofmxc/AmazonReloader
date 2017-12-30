@@ -60,7 +60,38 @@ namespace AmazonReloader
             catch (NoSuchElementException)
             {}
 
-            _driver.FindElementById("asv-form-submit").Click();
+            FindOnPageThenClick("asv-form-submit");
+        }
+
+        public void FindOnPageThenClick(string elementId)
+        {
+            var elementToClick = _driver.FindElementById(elementId);
+            const int maxScrolls = 5;
+            int numberOfScrolls = 0;
+            _driver.Keyboard.SendKeys(Keys.Home); // Start at the top of the page
+            bool clicked = false;
+            while (!clicked)
+            {
+                try
+                {
+                    elementToClick.Click();
+                    return; // It was clicked, so we're done.
+                }
+                catch (InvalidOperationException e)
+                {
+                    if (!e.Message.Contains("Element is not clickable at point"))
+                    {
+                        // this is not an offscreen error, so throw it.
+                        throw e;
+                    }
+                }
+                _driver.Keyboard.SendKeys(Keys.PageDown); // We didn't find it so page down and try again
+                numberOfScrolls++;
+                if(numberOfScrolls > maxScrolls)
+                {
+                    throw new Exception($"Couldn't Find element {elementToClick.Text} after {maxScrolls} scroll attempts.");
+                }
+            }
         }
 
         public void AddBalance(decimal money)
@@ -89,7 +120,7 @@ namespace AmazonReloader
             if (successMsg == null)
                 Console.WriteLine($"Failed to reload {moneyString}!!!");
             else
-                Console.WriteLine($"Successfylly reloaded {moneyString}!");
+                Console.WriteLine($"Successfully reloaded {moneyString}!");
         }
 
         public void CloseBrowser()
