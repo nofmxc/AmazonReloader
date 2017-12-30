@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmazonReloader", "AmazonReloader\AmazonReloader.csproj", "{C46D8079-66EC-4405-B517-8ED42BBDCAA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountEncryptor", "AccountEncryptor\AccountEncryptor.csproj", "{04AD77DB-1BC2-46DD-AC16-EDC3F8E07E2B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountInfoEncryptor", "AccountEncryptor\AccountInfoEncryptor.csproj", "{04AD77DB-1BC2-46DD-AC16-EDC3F8E07E2B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
