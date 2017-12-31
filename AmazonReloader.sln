@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmazonReloader", "AmazonRel
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountInfoEncryptor", "AccountEncryptor\AccountInfoEncryptor.csproj", "{04AD77DB-1BC2-46DD-AC16-EDC3F8E07E2B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{403CF439-F3C0-4253-A7F6-7A03E49D60E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{04AD77DB-1BC2-46DD-AC16-EDC3F8E07E2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04AD77DB-1BC2-46DD-AC16-EDC3F8E07E2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04AD77DB-1BC2-46DD-AC16-EDC3F8E07E2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{403CF439-F3C0-4253-A7F6-7A03E49D60E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{403CF439-F3C0-4253-A7F6-7A03E49D60E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{403CF439-F3C0-4253-A7F6-7A03E49D60E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{403CF439-F3C0-4253-A7F6-7A03E49D60E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

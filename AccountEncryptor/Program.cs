@@ -1,5 +1,7 @@
 ﻿using AmazonReloader;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 
@@ -13,7 +15,8 @@ namespace AccountEncryptor
             {
                 Console.WriteLine("Choose what to do:");
                 Console.WriteLine("0. Exit.");
-                Console.WriteLine("1. Create Encrypted info.");
+                Console.WriteLine("1. Create Encrypted Credit Card Information.");
+                Console.WriteLine("2. Create Encrypted Amazon Account Information.");
 
                 var input = Console.ReadLine();
                 switch (input)
@@ -22,7 +25,11 @@ namespace AccountEncryptor
                         return;
                     case "1":
                         Console.Clear();
-                        CreateEncryptedInfo();
+                        CreateEncryptedCreditCardInfo();
+                        break;
+                    case "2":
+                        Console.Clear();
+                        CreateEncryptedAmazonAccountInfo();
                         break;
                     default:
                         Console.Clear();
@@ -31,7 +38,96 @@ namespace AccountEncryptor
             }
         }
 
-        private static void CreateEncryptedInfo()
+        private static void CreateEncryptedAmazonAccountInfo()
+        {
+            var secretKey = GetSecretKey();
+
+            Console.WriteLine($"Enter the following information to generate encrypted versions for the program to use.");
+            Console.WriteLine("Amazon email address (example name@gmail.com):");
+            var email = Console.ReadLine();
+            Console.WriteLine("Amazon password:");
+            var password = GetPassword();
+           
+            var encryptedEmail = AESGCM.SimpleEncrypt(email, secretKey);
+            var encryptedPassword = AESGCM.SimpleEncrypt(password, secretKey);
+            
+            string encryptedInfoPath = 
+                $"{ConfigurationManager.AppSettings["encrypted_info_folder"]}\\{ConfigurationManager.AppSettings["encrypted_amazon_account_into_file_name"]}";
+
+            Console.WriteLine($"Encrypted Output Below. Saving to account info json file at {encryptedInfoPath}:");
+            Console.WriteLine("");
+            Console.WriteLine($"Encrypted Amazon Email        :{encryptedEmail}");
+            Console.WriteLine($"Encrypted Amazon Password     :{encryptedPassword}");
+
+            var newEncyptedCredentials = new Credentials
+            {
+                EncryptedPassword = encryptedPassword,
+                EncryptedEmail = encryptedEmail
+            };
+            var serializedEncyptedCredentials = JsonConvert.SerializeObject(newEncyptedCredentials);
+
+            FileInfo fileInfo = new FileInfo(encryptedInfoPath);
+            if (!fileInfo.Exists)
+            {
+                Directory.CreateDirectory(fileInfo.Directory.FullName);
+            }
+            File.WriteAllText(encryptedInfoPath, serializedEncyptedCredentials);
+
+            Console.WriteLine($"Success! Saved new account info.");
+            Console.WriteLine("");
+        }
+
+        private static void CreateEncryptedCreditCardInfo()
+        {
+            var secretKey = GetSecretKey();
+
+            Console.WriteLine($"Enter the following information to generate encrypted versions for the program to use.");
+            Console.WriteLine("Bank info (your own description):");
+            var bankName = Console.ReadLine();
+            Console.WriteLine("Your name on the credit card:");
+            var nameOnCc = Console.ReadLine();
+            Console.WriteLine("Credit card number:");
+            var ccNumber = Console.ReadLine();
+            Console.WriteLine("Credit card expiration (example 06/2019):");
+            var expiration = Console.ReadLine();
+            Console.WriteLine("Number of needed purchases a month:");
+            var numberOfPurchases = Int32.Parse(Console.ReadLine());
+            
+            var encryptedNameOnCc = AESGCM.SimpleEncrypt(nameOnCc, secretKey);
+            var encryptedCcNumber = AESGCM.SimpleEncrypt(ccNumber, secretKey);
+            var encryptedExpiration = AESGCM.SimpleEncrypt(expiration, secretKey);
+
+            string encryptedInfoPath = ConfigurationManager.AppSettings["encrypted_info_folder"];
+
+            Console.WriteLine($"Encrypted Output Below. Saving to credit card json file at {encryptedInfoPath}:");
+            Console.WriteLine("");
+            Console.WriteLine($"Bank Name (Not encrypted)           :{bankName}");
+            Console.WriteLine($"Encrypted Name on Credit Card       :{encryptedNameOnCc}");
+            Console.WriteLine($"Encrypted Credit Card Number        :{encryptedCcNumber}");
+            Console.WriteLine($"Encrypted Expiration Date           :{encryptedExpiration}");
+            Console.WriteLine($"Number of Purchases (Not encrypted) :{numberOfPurchases}");
+
+            var newEncyptedCreditCardInfo = new CreditCard
+            {
+                Bank = bankName,
+                EncryptedName = encryptedNameOnCc,
+                EncryptedExpires = encryptedExpiration,
+                EncryptedNumber = encryptedCcNumber,
+                NumberOfNeededPurchasesPerMonth = numberOfPurchases,
+                NumberOfPurchasesForEachMonth = new Dictionary<string, int>()
+            };
+            var serializedCcInfo = JsonConvert.SerializeObject(newEncyptedCreditCardInfo);
+
+            var fullPath = newEncyptedCreditCardInfo.GetThisCardFileLocation();
+            FileInfo fileInfo = new FileInfo(fullPath);
+            if (!fileInfo.Exists)
+            {
+                Directory.CreateDirectory(fileInfo.Directory.FullName);
+            }
+            File.WriteAllText(fullPath, serializedCcInfo);
+        }
+
+        private static byte[] GetSecretKey()
         {
             string keyPath = ConfigurationManager.AppSettings["secret_key_location"];
             byte[] currentKey = File.ReadAllBytes(keyPath);
@@ -39,31 +135,12 @@ namespace AccountEncryptor
             if (currentKey.Length == 0)
             {
                 Console.WriteLine("Current key does not exist. Need to create one.");
-                CreateNewKey();
+                currentKey = CreateNewKey();
             }
-
-            Console.WriteLine($"Enter the following information to generate encrypted versions which can be entered into config. (encrypted using key at {keyPath}):");
-            Console.WriteLine("Amazon email address (example name@gmail.com):");
-            var email = Console.ReadLine();
-            Console.WriteLine("Amazon password:");
-            var password = GetPassword();
-            Console.WriteLine("Your name on the credit card:");
-            var nameOnCc = Console.ReadLine();
-            Console.WriteLine("Credit card number:");
-            var ccNumber = Console.ReadLine();
-            Console.WriteLine("Credit card expiration (example 06/2019):");
-            var expiration = Console.ReadLine();
-
-            Console.WriteLine("Encrypted Output Below. Copy to app.config:");
-            Console.WriteLine("");
-            Console.WriteLine($"Encrypted Amazon Email        :{AESGCM.SimpleEncrypt(email, currentKey)}");
-            Console.WriteLine($"Encrypted Amazon Password     :{AESGCM.SimpleEncrypt(password, currentKey)}");
-            Console.WriteLine($"Encrypted Name on Credit Card :{AESGCM.SimpleEncrypt(nameOnCc, currentKey)}");
-            Console.WriteLine($"Encrypted Credit Card Number  :{AESGCM.SimpleEncrypt(ccNumber, currentKey)}");
-            Console.WriteLine($"Encrypted Expiration Date     :{AESGCM.SimpleEncrypt(expiration, currentKey)}");
+            return currentKey;
         }
 
-        private static void CreateNewKey()
+        private static byte[] CreateNewKey()
         {
             string keyPath = ConfigurationManager.AppSettings["secret_key_location"];
 
@@ -77,6 +154,7 @@ namespace AccountEncryptor
             var newKey = AESGCM.NewKey();
             File.WriteAllBytes(keyPath, newKey);
             Console.WriteLine($"Success. Wrote new key to {keyPath}.");
+            return newKey;
         }
 
         private static string GetPassword()

@@ -1,66 +1,60 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using log4net;
+using Newtonsoft.Json;
 
 namespace AmazonReloader
 {
-    internal class Program
+    public class Program
     {
-        private static readonly List<CreditCard> CreditCards =
-            new List<CreditCard> { Credentials.CreditCards.ConsumersCU, Credentials.CreditCards.NorthPointeBank };
+        private static List<CreditCard> CreditCards = new List<CreditCard>();
+        private static Credentials AmazonCredentials;
 
         private static ILog _log;
-        private static int _ccuCount;
-        private static int _npbCount;
-        private static int _reloadsThisRun = 0;
-
+        
         static void Main(string[] args)
         {
             Configurelogger();
             _log.Info("Starting...");
-            GetCounters();
 
-            if (_ccuCount < 12)
+            // Set AmazonCredentials
+            var accountInfoPath =
+                $"{ConfigurationManager.AppSettings["encrypted_info_folder"]}\\{ConfigurationManager.AppSettings["encrypted_amazon_account_into_file_name"]}";
+            AmazonCredentials = JsonConvert.DeserializeObject<Credentials>(File.ReadAllText(accountInfoPath));
+
+            // Set CreditCards
+            var ccInfoFolder = $"{ConfigurationManager.AppSettings["encrypted_info_folder"]}";
+            var infoFiles = Directory.GetFiles(ccInfoFolder);
+            foreach(var file in infoFiles)
             {
-                DoTheDeed(Credentials.CreditCards.ConsumersCU, 5);
+                var fileInfo = new FileInfo(file);
+                if (fileInfo.Name.ToLower().Equals(ConfigurationManager.AppSettings["encrypted_amazon_account_into_file_name"].ToLower()))
+                {
+                    // Don't process the account info as a Credit Card
+                    continue;
+                }
+
+                var creditCard = JsonConvert.DeserializeObject<CreditCard>(File.ReadAllText(file));
+                CreditCards.Add(creditCard);                
             }
 
-            if (_npbCount < 15)
+            var currentMonthYear = CreditCard.GetMonthYearKeyForPurchases(DateTime.Now);
+            foreach (var creditCard in CreditCards)
             {
-                DoTheDeed(Credentials.CreditCards.NorthPointeBank, 5);
-            }
-
-            if (_reloadsThisRun > 0)
-            {
-                File.Copy("counters.config", "C:\\AmazonReloader\\counters.config", true);
-            }
-        }
-
-        private static void GetCounters()
-        {
-            var currentMonth = $"{DateTime.Now.ToString("MMMM", CultureInfo.InvariantCulture)}_{DateTime.Now.Year}";
-            var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            if (config.AppSettings.Settings.AllKeys.Any(key => key.Contains(currentMonth)))
-            {
-                var counts = config.AppSettings.Settings[currentMonth].Value;
-                _ccuCount = int.Parse(counts.Split(new []{"; "}, StringSplitOptions.None)[0].Substring(4));
-                _npbCount = int.Parse(counts.Split(new[] {"; "}, StringSplitOptions.None)[1].Substring(4));
-            }
-            else
-            {
-                config.AppSettings.Settings.Add(currentMonth, "ccu: 0; npb: 0");
-                config.Save(ConfigurationSaveMode.Modified);
-                ConfigurationManager.RefreshSection(config.AppSettings.SectionInformation.Name);
-                _ccuCount = 0;
-                _npbCount = 0;
+                if (!creditCard.NumberOfPurchasesForEachMonth.ContainsKey(currentMonthYear))
+                {
+                    creditCard.NumberOfPurchasesForEachMonth.Add(currentMonthYear, 0);
+                }
+                if (creditCard.NumberOfPurchasesForEachMonth[currentMonthYear] < creditCard.NumberOfNeededPurchasesPerMonth)
+                {
+                    DoTheDeed(creditCard, 5);
+                }
             }
         }
 
-        private static void DoTheDeed(CreditCard cc, int maxAttempts)
+        private static bool DoTheDeed(CreditCard cc, int maxAttempts)
         {
             int attempts = 1;
             bool success = false;
@@ -71,30 +65,30 @@ namespace AmazonReloader
                 attempts++;
             }
             var successMessage = success ? "Success" : "Failure";
+            _log.Info($"{cc.Bank}: {successMessage} after {attempts} attempt(s)");
             if (success)
             {
-                IncrementCount(cc.Bank);
-                _reloadsThisRun++;
+                IncrementPurchaseCount(cc);
+                return true;
             }
-            _log.Info($"{cc.Bank}: {successMessage} after {attempts} attempt(s)");
+            else
+            {
+                return false;
+            }
         }
 
-        private static void IncrementCount(string ccBank)
+        private static void IncrementPurchaseCount(CreditCard cc)
         {
-            var currentMonth = $"{DateTime.Now.ToString("MMMM", CultureInfo.InvariantCulture)}_{DateTime.Now.Year}";
-            var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-             
-            if (ccBank == "ConsumersCU")
+            var currentMonthYear = CreditCard.GetMonthYearKeyForPurchases(DateTime.Now);
+
+            if (!cc.NumberOfPurchasesForEachMonth.ContainsKey(currentMonthYear))
             {
-                _ccuCount++;
+                cc.NumberOfPurchasesForEachMonth.Add(currentMonthYear, 0);
             }
-            else if (ccBank == "NorthPointeBank")
-            {
-                _npbCount++;
-            }
-            config.AppSettings.Settings[currentMonth].Value = $"ccu: {_ccuCount}; npb: {_npbCount}";
-            config.Save(ConfigurationSaveMode.Modified);
-            ConfigurationManager.RefreshSection(config.AppSettings.SectionInformation.Name);
+
+            cc.NumberOfPurchasesForEachMonth[currentMonthYear]++;
+            var updatedCardSerialized = JsonConvert.SerializeObject(cc);
+            File.WriteAllText(cc.GetThisCardFileLocation(), updatedCardSerialized);        
         }
 
         public static bool Reload(CreditCard cc)
@@ -105,13 +99,12 @@ namespace AmazonReloader
             try
             {
                 clicker.OpenAmazon();
-                clicker.Login();
+                clicker.Login(AmazonCredentials);
                 clicker.OpenReloadPage();
                 clicker.SelectCard(cc);
                 var money = GenerateRandomSum();
                 clicker.AddBalance(money);
-                clicker.ConfirmSuccess(money);
-                success = true;
+                success = clicker.ConfirmSuccess(money);
             }
             catch (Exception e)
             {

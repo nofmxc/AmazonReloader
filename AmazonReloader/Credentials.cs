@@ -1,48 +1,36 @@
-﻿using System.Configuration;
+﻿using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 
 namespace AmazonReloader
 {
-    public static class Credentials
+    public class Credentials
     {
-        private const string KeyPath = "C:\\AmazonReloader\\key";
-        private static byte[] Key => File.ReadAllBytes(KeyPath);
+        private readonly string KeyPath;
+        private byte[] Key => File.ReadAllBytes(KeyPath);
 
-        public static string Email
+        public Credentials()
         {
-            get
-            {
-                var decryptedEmail = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["email"], Key);
-                return decryptedEmail;
-            }
+            KeyPath = ConfigurationManager.AppSettings["secret_key_location"];
         }
 
-        public static string Password
-        {
-            get
-            {
-                var decryptedEmail = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["pass"], Key);
-                return decryptedEmail;
-            }
-        }
+        public string EncryptedEmail;
+        public string EncryptedPassword;
 
-        public static class CreditCards
+        public string GetEmail()
         {
-            public static CreditCard ConsumersCU => new CreditCard
-            {
-                Bank = "ConsumersCU",
-                Name = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["cc_name"], Key),
-                Number = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["ccu_number"], Key),
-                Expires = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["ccu_expires"], Key)
-            };
-
-            public static CreditCard NorthPointeBank => new CreditCard
-            {
-                Bank = "NorthPointeBank",
-                Name = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["cc_name"], Key),
-                Number = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["nb_number"], Key),
-                Expires = AESGCM.SimpleDecrypt(ConfigurationManager.AppSettings["nb_expires"], Key)
-            };
+            var decryptedEmail = AESGCM.SimpleDecrypt(EncryptedEmail, Key);
+            return decryptedEmail;
         }
+        public string GetPassword()
+        {
+            var decryptedPassword = AESGCM.SimpleDecrypt(EncryptedPassword, Key);
+            return decryptedPassword;
+        }
+    }
+
+    public class CreditCards
+    {
+        public static List<CreditCard> Cards;
     }
 }

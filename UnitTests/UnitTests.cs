@@ -19,7 +19,9 @@ namespace ConsoleApp2
         public void CanReload()
         {
             //var program = new Program();
-            Program.Reload(Credentials.CreditCards.ConsumersCU);
+            // TODO: Fix this test?
+            var creditCard = new CreditCard();
+            Program.Reload(creditCard);
         }
 
         [Test]
