@@ -30,32 +30,32 @@ namespace AmazonReloader
 
         public void Login(Credentials creds)
         {
-            _driver.FindElementById("nav-link-accountList").Click();
-            _driver.FindElementById("ap_email").SendKeys(creds.GetEmail());
-            _driver.FindElementById("ap_password").SendKeys(creds.GetPassword());
-            _driver.FindElementById("signInSubmit").Click();
+            FindOnPageThenClick(_driver.FindElementById("nav-link-accountList"));
+            FindOnPageThenSendKeys(_driver.FindElementById("ap_email"), creds.GetEmail());
+            FindOnPageThenClick(_driver.FindElementById("continue"));
+            Thread.Sleep(2000);
+            FindOnPageThenSendKeys(_driver.FindElementById("ap_password"), creds.GetPassword());
+            FindOnPageThenClick(_driver.FindElementById("signInSubmit"));
         }
 
         public void OpenReloadPage()
         {
-            var element = _driver.FindElementByLinkText("Reload Your Balance");
+            FindOnPageThenClick(_driver.FindElementByLinkText("Reload Your Balance"));
 
-            FindOnPageThenClick(element);
-
-            _driver.FindElementByName("GC-Reload-Button").Click();
+            FindOnPageThenClick(_driver.FindElementByName("GC-Reload-Button"));
         }
 
         public void SelectCard(CreditCard cc)
         {
             var lastFour = cc.GetCcNumber().Substring(12);
             Thread.Sleep(1500);
-            _driver.FindElementById("asv-payment-edit-link").Click();
-            _driver.FindElementsByClassName("pmts-instrument-acct-number-tail").Single(el => el.Text == lastFour).Click();
+            FindOnPageThenClick(_driver.FindElementById("asv-payment-edit-link"));
+            FindOnPageThenClick(_driver.FindElementsByClassName("pmts-cc-number").Single(x => x.Text.Contains(lastFour)));
             try
             {
-                _driver.FindElementsByClassName("a-input-text").Single(el => el.GetAttribute("placeholder") == $"ending in {lastFour}")
-                    .SendKeys(cc.GetCcNumber());
-                _driver.FindElementsByClassName("a-button-text").Single(el => el.Text == "Confirm Card").Click();
+                FindOnPageThenSendKeys(_driver.FindElementsByClassName("a-input-text").Single(el => el.GetAttribute("placeholder") == $"ending in {lastFour}"), 
+                    cc.GetCcNumber());
+                FindOnPageThenClick(_driver.FindElementsByClassName("a-button-text").Single(el => el.Text == "Confirm Card"));
                 Thread.Sleep(1000);
             }
             catch (NoSuchElementException)
@@ -72,6 +72,13 @@ namespace AmazonReloader
             element.Click();
         }
 
+        public void FindOnPageThenSendKeys(IWebElement element, string text)
+        {
+            IJavaScriptExecutor jse = (IJavaScriptExecutor)_driver;
+            jse.ExecuteScript("arguments[0].scrollIntoView()", element);
+            element.SendKeys(text);
+        }
+
         public void AddBalance(decimal money)
         {
             var moneyString = money.ToString(CultureInfo.InvariantCulture);
@@ -80,14 +87,14 @@ namespace AmazonReloader
             amountField.SendKeys(moneyString);
             try
             {
-                _driver.FindElementById("asv-reward-box-reload-amount").Click();
+                FindOnPageThenClick(_driver.FindElementById("asv-reward-box-reload-amount"));
             }
             catch (InvalidOperationException e)
             {
                 Console.WriteLine(e);
             }
             Thread.Sleep(1300);
-            _driver.FindElementsById("form-submit-button").Single(el => el.Text == $"Reload ${moneyString}").Click();
+            FindOnPageThenClick(_driver.FindElementsById("form-submit-button").Single(el => el.Text == $"Reload ${moneyString}"));
         }
 
         public bool ConfirmSuccess(decimal money)
