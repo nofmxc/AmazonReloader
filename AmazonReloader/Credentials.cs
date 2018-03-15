@@ -19,8 +19,8 @@ namespace AmazonReloader
 
         public string GetEmail()
         {
-            var decryptedEmail = AESGCM.SimpleDecrypt(EncryptedEmail, Key);
-            return decryptedEmail;
+            var email = AESGCM.SimpleDecrypt(EncryptedEmail, Key);
+            return email;
         }
         public string GetPassword()
         {
