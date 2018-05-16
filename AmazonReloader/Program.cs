@@ -11,13 +11,12 @@ namespace AmazonReloader
     {
         private static List<CreditCard> CreditCards = new List<CreditCard>();
         private static Credentials AmazonCredentials;
-
-        private static ILog _log;
+        
         
         static void Main(string[] args)
         {
             Configurelogger();
-            _log.Info("Starting...");
+            Logger.Info("Starting...");
 
             // Set AmazonCredentials
             var accountInfoPath =
@@ -49,7 +48,7 @@ namespace AmazonReloader
                 }
                 if (creditCard.NumberOfPurchasesForEachMonth[currentMonthYear] < creditCard.NumberOfNeededPurchasesPerMonth)
                 {
-                    DoTheDeed(creditCard, 5);
+                    DoTheDeed(creditCard, 1);
                 }
             }
         }
@@ -58,14 +57,14 @@ namespace AmazonReloader
         {
             int attempts = 1;
             bool success = false;
-            while (attempts < maxAttempts)
+            while (attempts <= maxAttempts)
             {
                 success = Reload(cc);
                 if (success) break;
                 attempts++;
             }
             var successMessage = success ? "Success" : "Failure";
-            _log.Info($"{cc.Bank}: {successMessage} after {attempts} attempt(s)");
+            Logger.Info($"{cc.Bank}: {successMessage} after {attempts} attempt(s)");
             if (success)
             {
                 IncrementPurchaseCount(cc);
@@ -108,7 +107,7 @@ namespace AmazonReloader
             }
             catch (Exception e)
             {
-                _log.Error(e);
+                Logger.Error(e.ToString());
             }
             finally
             {
@@ -128,7 +127,6 @@ namespace AmazonReloader
         private static void Configurelogger()
         {
             log4net.Config.XmlConfigurator.Configure();
-            _log = LogManager.GetLogger(typeof(Program));
         }
     }
 }

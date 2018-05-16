@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Interactions;
 
 namespace AmazonReloader
 {
@@ -30,10 +31,11 @@ namespace AmazonReloader
 
         public void Login(Credentials creds)
         {
-            FindOnPageThenClick(_driver.FindElementById("nav-link-accountList"));
+            var a = _driver.FindElementById("nav-link-accountList");
+            FindOnPageThenClick(a);
             FindOnPageThenSendKeys(_driver.FindElementById("ap_email"), creds.GetEmail());
-            FindOnPageThenClick(_driver.FindElementById("continue"));
-            Thread.Sleep(2000);
+            //FindOnPageThenClick(_driver.FindElementById("continue"));
+            Thread.Sleep(500);
             FindOnPageThenSendKeys(_driver.FindElementById("ap_password"), creds.GetPassword());
             FindOnPageThenClick(_driver.FindElementById("signInSubmit"));
         }
@@ -42,7 +44,9 @@ namespace AmazonReloader
         {
             FindOnPageThenClick(_driver.FindElementByLinkText("Reload Your Balance"));
 
-            FindOnPageThenClick(_driver.FindElementByName("GC-Reload-Button"));
+            var reloadButton = _driver.FindElementByName("GC-Reload-Button");
+            
+            FindOnPageThenHitIt(reloadButton);
         }
 
         public void SelectCard(CreditCard cc)
@@ -70,6 +74,15 @@ namespace AmazonReloader
             IJavaScriptExecutor jse = (IJavaScriptExecutor)_driver;
             jse.ExecuteScript("arguments[0].scrollIntoView()", element);
             element.Click();
+        }
+
+        public void FindOnPageThenHitIt(IWebElement element)
+        {
+            IJavaScriptExecutor jse = (IJavaScriptExecutor)_driver;
+            jse.ExecuteScript("arguments[0].scrollIntoView()", element);
+
+            Actions builder = new Actions(_driver);
+            builder.MoveToElement(element, 1, 1).Click().Build().Perform();
         }
 
         public void FindOnPageThenSendKeys(IWebElement element, string text)
