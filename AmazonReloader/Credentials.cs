@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 
@@ -19,8 +19,8 @@ namespace AmazonReloader
 
         public string GetEmail()
         {
-            var decryptedEmail = AESGCM.SimpleDecrypt(EncryptedEmail, Key);
-            return decryptedEmail;
+            var emailFromFile = AESGCM.SimpleDecrypt(EncryptedEmail, Key);
+            return emailFromFile;
         }
         public string GetPassword()
         {

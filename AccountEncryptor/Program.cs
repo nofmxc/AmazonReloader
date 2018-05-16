@@ -17,6 +17,7 @@ namespace AccountEncryptor
                 Console.WriteLine("0. Exit.");
                 Console.WriteLine("1. Create Encrypted Credit Card Information.");
                 Console.WriteLine("2. Create Encrypted Amazon Account Information.");
+                Console.WriteLine("3. Wowza!");
 
                 var input = Console.ReadLine();
                 switch (input)
